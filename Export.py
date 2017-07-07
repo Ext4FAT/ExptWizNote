@@ -1,14 +1,20 @@
 #!/usr/bin/env python
 # encoding: utf-8
 import sys, io, os, re
+import codecs
 import shutil
+import logging
 import sqlite3
 import zipfile
+import subprocess
+from bs4 import BeautifulSoup
 
-ROOT = '/home/idler/Desktop/OUT'
+ROOT = './OUT'
 NOTES = './notes/'
 ATTACHMENTS = './attachments/'
 
+PYINTERPRETER = "/usr/bin/python3" 
+HTML2TEXT = "./lib/html2text.py"
 
 def unzip(src, dst):
     zip_file = zipfile.ZipFile(src)
@@ -33,6 +39,21 @@ def readFromDB(dbname, sql):
     table = cursor.fetchall()
     return table
 
+def addInitURL(htmlname):
+    print(htmlname)
+    html = codecs.open(htmlname, 'rb', 'utf-8')
+    soup = BeautifulSoup(html, "lxml")
+    body = soup.body
+    a_tag = body.new_tag("a", href = "www.example.com") 
+    body.insert(0, a_tag)
+    newhtml = codecs.open('new-' + htmlname, 'wb', 'utf-8')
+    newhtml.write(str(soup))
+    newhtml.close()
+    html.close()
+
+def wrapMarkdown(filepath, mdpath):
+    pargs = [PYINTERPRETER, HTML2TEXT, filepath, '1>'+mdpath]
+    os.system(' '.join(pargs))
 
 
 def copyNotes(table):
@@ -41,17 +62,20 @@ def copyNotes(table):
         notename = rmExtname(notename)
         spath = NOTES + '{' + hash + '}'
         dpath = ROOT + location + notename
+        if notename.endswith('.md'):
+            dpath = dpath + '.md'
         makePath(dpath)
         if url:    
             print(url)
-            unzip(spath, dpath)
-        '''
+            #addInitURL(dpath + '/index.html')
         try:
-            shutil.copyfile(spath, dpath)
-            print('[INFO]\t' + spath)
+            unzip(spath, dpath)
+            print('[UNZIP]\t' + spath + '->' + dpath)
+            if notename.endswith('.md'):
+                wrapMarkdown(dpath + '/index.html', ROOT + location + notename)
+                shutil.rmtree(dpath)
         except Exception as e:
             print(e)
-        '''
 
 def copyAttachments(table):
     for row in table:
