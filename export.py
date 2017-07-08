@@ -16,6 +16,7 @@ ATTACHMENTS = './attachments/'
 PYINTERPRETER = "/usr/bin/python3"
 HTML2TEXT = "./lib/html2text.py"
 
+
 def isEmail(str):
     emailRegex = r'^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}$'
     flag = re.match(emailRegex, str)
@@ -70,7 +71,7 @@ def addInitURL(htmlname):
     html.close()
 
 def wrapMarkdown(filepath, mdpath):
-    pargs = [PYINTERPRETER, HTML2TEXT, filepath, '1>'+mdpath]
+    pargs = [PYINTERPRETER, HTML2TEXT, '"'+filepath+'"', '1>'+'"'+mdpath+'"']
     os.system(' '.join(pargs))
 
 
@@ -79,8 +80,10 @@ def copyNotes(table):
         hash, notetitle, location, url = row
         spath = NOTES + '{' + hash + '}'
         dpath = ROOT + location + notetitle
+        '''
         if notetitle.endswith('.md'):
             dpath = dpath + '.md'
+        '''
         makePath(dpath)
         if url:
             print(url)
@@ -88,9 +91,11 @@ def copyNotes(table):
         try:
             unzip(spath, dpath)
             print('[UNZIP]\t' + spath + '->' + dpath)
+            '''
             if notetitle.endswith('.md'):
                 wrapMarkdown(dpath + '/index.html', ROOT + location + notetitle)
                 shutil.rmtree(dpath)
+            '''
         except Exception as e:
             print(e)
 
