@@ -9,12 +9,29 @@ import zipfile
 import subprocess
 from bs4 import BeautifulSoup
 
-ROOT = './OUT'
+ROOT = './WizNotes'
 NOTES = './notes/'
 ATTACHMENTS = './attachments/'
 
 PYINTERPRETER = "/usr/bin/python3"
 HTML2TEXT = "./lib/html2text.py"
+
+def isEmail(str):
+    emailRegex = r'^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}$'
+    flag = re.match(emailRegex, str)
+    return flag
+
+def findAccount():
+    # add home
+    os.environ['HOME']
+    os.path.expandvars('$HOME')
+    homedir = os.path.expanduser('~')
+    dirs = os.listdir(homedir + '/.wiznote')
+    acc = [d for d in dirs if isEmail(d)]
+    return acc
+
+def dataLocation(acc):
+    return os.path.expanduser('~') + '/.wiznote/' + acc + '/data/' 
 
 def unzip(src, dst):
     zip_file = zipfile.ZipFile(src)
@@ -90,14 +107,24 @@ def copyAttachments(table):
             print(e)
             #print('[ERROR]\t' + spath)
 
-def main():
+def exportNotes(dataLoc):
+    # change dir
+    os.chdir(dataLoc)
+    # exec sql
     sql_note = "select DOCUMENT_GUID, DOCUMENT_TITLE, DOCUMENT_LOCATION, DOCUMENT_URL from WIZ_DOCUMENT"
     sql_attach = "select ATTACHMENT_GUID, DOCUMENT_LOCATION, DOCUMENT_TITLE, ATTACHMENT_NAME from WIZ_DOCUMENT, WIZ_DOCUMENT_ATTACHMENT where  WIZ_DOCUMENT.DOCUMENT_GUID = WIZ_DOCUMENT_ATTACHMENT.DOCUMENT_GUID"
     notes = readFromDB("index.db", sql_note)
-    copyNotes(notes)
     atttachments = readFromDB("index.db", sql_attach)
+    # proc
+    copyNotes(notes)
     copyAttachments(atttachments)
 
+def main():
+    accounts = findAccount()
+    for acc in accounts:
+        dataLoc = dataLocation(acc)
+        exportNotes(dataLoc)
+        
 if __name__ == "__main__":
     main()
 
